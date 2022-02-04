@@ -12,18 +12,24 @@ namespace DontConflict
         public Color color1;
         public Color color2;
         public Color playerColor = Color.black;
+        public Color appleColor = Color.red;
         public Transform cameraHolder;
 
 
         GameObject playerObj;
         GameObject mapObject;
+        GameObject appleObj;
         Node playerNode;
+        Node appleNode;
         SpriteRenderer mapRenderer;
 
         Node[,] grid;
+        List<Node> availableNodes = new List<Node>();
  
         bool up,down,left,right;        // Player Input variables
-        bool isPlayerMoving;
+        
+        public float moveRate = 0.5f;
+        float timer;
 
         Direction curDirection;
         public enum Direction
@@ -37,6 +43,7 @@ namespace DontConflict
             CreateMap();
             PlacePlayer();
             PlaceCamera(); 
+            CreateApple();
         }
         
         private void CreateMap() 
@@ -60,6 +67,7 @@ namespace DontConflict
                     };
                     
                     grid[x,y] = n;
+                    availableNodes.Add(n);
                     
                     #region Visual
                     if(x % 2 != 0)
@@ -113,6 +121,15 @@ namespace DontConflict
             p += Vector3.one * .5f;
             cameraHolder.position = p;
         }
+       
+        void CreateApple()
+        {
+            appleObj = new GameObject("Apple");
+            SpriteRenderer appleRenderer = appleObj.AddComponent<SpriteRenderer>();
+            appleRenderer.sprite = CreateSprite(appleColor);
+            appleRenderer.sortingOrder = 1;
+            RandomlyPlaceApple();
+        }
         #endregion
         
         #region update
@@ -120,7 +137,14 @@ namespace DontConflict
         {
             GetInput();
             SetPlayerDirection();
-            MovePlayer();
+           
+            timer += Time.deltaTime;
+            if(timer > moveRate)
+            {
+                timer = 0;
+                MovePlayer();
+
+            }
         }
 
         private void GetInput()
@@ -136,22 +160,22 @@ namespace DontConflict
             if(up)
             {
                 curDirection = Direction.up;
-                isPlayerMoving = true;
+                
             }
             else if(down)
             {
                 curDirection = Direction.down;
-                isPlayerMoving = true;
+                
             }
             else if(left)
             {
                 curDirection = Direction.left;
-                isPlayerMoving = true;
+                
             }
             else if(right)
             {
                 curDirection = Direction.right;
-                isPlayerMoving = true;
+                
             }
         }
 
@@ -159,10 +183,7 @@ namespace DontConflict
         {   int x = 0;
             int y = 0;
 
-            if(!isPlayerMoving)
-                return;
-
-            isPlayerMoving = false; 
+            
 
             switch (curDirection) 
             {
@@ -187,8 +208,31 @@ namespace DontConflict
             }
             else
             {
+                bool isScore = false;
+
+                if(targetNode == appleNode)
+                {
+                    //  You've scored
+                    isScore = true;
+                    
+                }
+
+                availableNodes.Remove(playerNode);
                 playerObj.transform.position = targetNode.worldPosition; 
                 playerNode = targetNode;
+                availableNodes.Add(playerNode);
+
+                if(isScore)
+                {
+                    if(availableNodes.Count > 0)
+                    {
+                        RandomlyPlaceApple();
+                    }
+                    else 
+                    {
+                        //You Won
+                    }
+                }
             }
         }
         #endregion
@@ -210,6 +254,14 @@ namespace DontConflict
             txt.filterMode = FilterMode.Point;
             Rect rect = new Rect(0, 0, 1, 1);
             return  Sprite.Create(txt, rect, Vector2.zero, 1, 0, SpriteMeshType.FullRect);
+        }
+        
+        void RandomlyPlaceApple()
+        {
+            int ran = Random.Range(0, availableNodes.Count);
+            Node n = availableNodes[ran];
+            appleObj.transform.position = n.worldPosition;
+            appleNode = n;
         }
         #endregion
     }
