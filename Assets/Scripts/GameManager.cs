@@ -22,6 +22,7 @@ namespace DontConflict
         GameObject tailParent;
         Node playerNode;
         Node appleNode;
+        Node prevPlayerNode;
         SpriteRenderer mapRenderer;
         Sprite playerSprite;
 
@@ -34,7 +35,9 @@ namespace DontConflict
         public float moveRate = 0.5f;
         float timer;
 
+        Direction targetDirection;
         Direction curDirection;
+
         public enum Direction
         {
             up,down,left,right
@@ -114,7 +117,9 @@ namespace DontConflict
             playerRender.sprite = playerSprite;
             playerRender.sortingOrder = 1;
             playerNode = GetNode(3, 3);
-            playerObj.transform.position = playerNode.worldPosition;
+            PlacePlayerObject(playerObj, playerNode.worldPosition);
+            playerObj.transform.localScale = Vector3.one * 1.2f;
+            
             tailParent = new GameObject("tailParent");
         }
         
@@ -146,6 +151,7 @@ namespace DontConflict
             if(timer > moveRate)
             {
                 timer = 0;
+                curDirection = targetDirection;
                 MovePlayer();
 
             }
@@ -163,31 +169,39 @@ namespace DontConflict
         {
             if(up)
             {
-                curDirection = Direction.up;
+                SetDirection(Direction.up);
                 
             }
             else if(down)
             {
-                curDirection = Direction.down;
+                SetDirection(Direction.down);
                 
             }
             else if(left)
             {
-                curDirection = Direction.left;
+                SetDirection(Direction.left);
                 
             }
             else if(right)
             {
-                curDirection = Direction.right;
+                SetDirection(Direction.right);
                 
             }
         }
 
+        void SetDirection(Direction d)
+        {
+            if(!IsOpposite(d))
+            {
+                targetDirection = d;
+
+            }
+        }
+
+
         void MovePlayer()
         {   int x = 0;
             int y = 0;
-
-            
 
             switch (curDirection) 
             {
@@ -211,40 +225,48 @@ namespace DontConflict
                 //Game OVER
             }
             else
-            {
-                bool isScore = false;
-
-                if(targetNode == appleNode)
+            {   
+                if(isTailNode(targetNode))
                 {
-                    //  You've scored
-                    isScore = true;
+                    //game over
+                }   
+                else
+                {
                     
-                }
+                    bool isScore = false;
 
-                Node previousNode = playerNode;
-                availableNodes.Add(previousNode);
-                
-
-                if(isScore)
-                {
-                    tail.Add(CreateTailNode(previousNode.x, previousNode.y));
-                    availableNodes.Remove(previousNode);
-                }
-
-                MoveTail();
-                playerObj.transform.position = targetNode.worldPosition; 
-                playerNode = targetNode;
-                availableNodes.Remove(playerNode);
-
-                if(isScore)
-                {
-                    if(availableNodes.Count > 0)
+                    if(targetNode == appleNode)
                     {
-                        RandomlyPlaceApple();
+                        //  You've scored
+                        isScore = true;
+                        
                     }
-                    else 
+
+                    Node previousNode = playerNode;
+                    availableNodes.Add(previousNode);
+                    
+
+                    if(isScore)
                     {
-                        //You Won
+                        tail.Add(CreateTailNode(previousNode.x, previousNode.y));
+                        availableNodes.Remove(previousNode);
+                    }
+
+                    MoveTail();
+                    PlacePlayerObject(playerObj, targetNode.worldPosition);
+                    playerNode = targetNode;
+                    availableNodes.Remove(playerNode);
+
+                    if(isScore)
+                    {
+                        if(availableNodes.Count > 0)
+                        {
+                            RandomlyPlaceApple();
+                        }
+                        else 
+                        {
+                            //You Won
+                        }
                     }
                 }
             }
@@ -270,7 +292,7 @@ namespace DontConflict
                 }
 
                 availableNodes.Remove(p.node);
-                p.obj.transform.position = p.node.worldPosition;
+                PlacePlayerObject(p.obj, p.node.worldPosition);
             }
         }
         #endregion
@@ -283,7 +305,13 @@ namespace DontConflict
 
             return grid[x, y];
         }
-        
+
+        void PlacePlayerObject(GameObject obj, Vector3 pos)
+        {
+            pos += Vector3.one * .5f;
+            obj.transform.position = pos;
+        }
+
         Sprite CreateSprite(Color targetColor)
         {
             Texture2D txt = new Texture2D(1,1);
@@ -291,7 +319,7 @@ namespace DontConflict
             txt.Apply();
             txt.filterMode = FilterMode.Point;
             Rect rect = new Rect(0, 0, 1, 1);
-            return  Sprite.Create(txt, rect, Vector2.zero, 1, 0, SpriteMeshType.FullRect);
+            return  Sprite.Create(txt, rect, Vector2.one * .5f, 1, 0, SpriteMeshType.FullRect);
         }
 
         SpecialNode CreateTailNode(int x, int y)
@@ -300,6 +328,7 @@ namespace DontConflict
             s.node = GetNode(x,y);
             s.obj = new GameObject();
             s.obj.transform.parent = tailParent.transform;
+            s.obj.transform.localScale = Vector3.one * .95f;
             SpriteRenderer r = s.obj.AddComponent<SpriteRenderer>();
             r.sprite = playerSprite;
             r.sortingOrder = 1;
@@ -307,11 +336,52 @@ namespace DontConflict
             return s;
         }
 
+        bool IsOpposite(Direction d)
+        {   
+            switch (d)
+           {    
+               default:
+               case Direction.up:
+                    if(curDirection == Direction.down)
+                        return true;
+                    else
+                     return false;
+                case Direction.down:
+                    if(curDirection == Direction.up)
+                        return true;
+                    else
+                        return false;
+                case Direction.left:
+                    if(curDirection == Direction.right)
+                        return true;
+                    else
+                        return false;
+                case Direction.right:
+                    if(curDirection == Direction.left)
+                        return true;
+                   else
+                       return false;
+           }
+           
+        }
+
+        bool isTailNode(Node n)
+        {
+            for(int i = 0; i < tail.Count; i++) 
+            {
+                if(tail[i].node == n)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void RandomlyPlaceApple()
         {
             int ran = Random.Range(0, availableNodes.Count);
             Node n = availableNodes[ran];
-            appleObj.transform.position = n.worldPosition;
+            PlacePlayerObject(appleObj, n.worldPosition);
             appleNode = n;
         }
         #endregion
