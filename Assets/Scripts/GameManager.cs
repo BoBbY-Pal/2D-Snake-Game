@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace DontConflict
 {
@@ -31,27 +33,70 @@ namespace DontConflict
         List<SpecialNode> tail = new List<SpecialNode>();
 
         bool up,down,left,right;        // Player Input variables
-        
+        bool isGameOver;
+        public bool isFirstInput;
+        int currentScore;
+        int highScore;
         public float moveRate = 0.5f;
         float timer;
 
         Direction targetDirection;
         Direction curDirection;
 
+        public Text currentScoreText;
+        public Text highScoreText;
+
         public enum Direction
         {
             up,down,left,right
         }
 
+        public UnityEvent onStart;
+        public UnityEvent onGameOver;
+        public UnityEvent firstInput;
+        public UnityEvent onScore;
+
         #region Init
         private void Start()
         {
+            onStart.Invoke();
+        }
+        
+        public void StartNewGame()
+        {
+            ClearReferences();
             CreateMap();
             PlacePlayer();
             PlaceCamera(); 
             CreateApple();
+            targetDirection = Direction.up;
+            isGameOver = false;
+            currentScore = 0;
+            UpdateScore();
+            
         }
-        
+
+        public void ClearReferences()
+        {
+            if(mapObject != null)
+                Destroy(mapObject);
+
+            if(playerObj != null)
+                Destroy(playerObj);
+
+            if(appleObj != null)
+                Destroy(appleObj);
+
+            foreach(var t in tail)
+            {
+                if(t.obj != null)
+                Destroy(t.obj);
+            }
+            tail.Clear();
+            availableNodes.Clear();
+            grid = null;
+        }
+
         private void CreateMap() 
         {   
             mapObject = new GameObject("Map");
@@ -144,17 +189,36 @@ namespace DontConflict
         #region update
         private void Update() 
         {
-            GetInput();
-            SetPlayerDirection();
-           
-            timer += Time.deltaTime;
-            if(timer > moveRate)
-            {
-                timer = 0;
-                curDirection = targetDirection;
-                MovePlayer();
-
+            if(isGameOver)
+            {    
+                if(Input.GetKeyDown(KeyCode.KeypadEnter))
+                {
+                    onStart.Invoke();
+                }
+                return;
             }
+            GetInput();
+            
+
+            if(isFirstInput)
+            {   
+                SetPlayerDirection();
+                timer += Time.deltaTime;
+                if(timer > moveRate)
+                {
+                     timer = 0;
+                    curDirection = targetDirection;
+                    MovePlayer();
+                }
+            }
+            else
+            {
+                if(up || down || left || right)
+                {
+                    isFirstInput = true;
+                    firstInput.Invoke();
+                }
+            }    
         }
 
         private void GetInput()
@@ -223,12 +287,14 @@ namespace DontConflict
             if(targetNode == null)
             {
                 //Game OVER
+                onGameOver.Invoke();
             }
             else
             {   
                 if(isTailNode(targetNode))
                 {
                     //game over
+                    onGameOver.Invoke();
                 }   
                 else
                 {
@@ -259,6 +325,14 @@ namespace DontConflict
 
                     if(isScore)
                     {
+                        currentScore++;
+                        if(currentScore >= highScore)
+                        {
+                            highScore = currentScore;
+                        }
+
+                        onScore.Invoke();
+                        
                         if(availableNodes.Count > 0)
                         {
                             RandomlyPlaceApple();
@@ -298,6 +372,18 @@ namespace DontConflict
         #endregion
 
         #region Utillities
+       public void GameOver()
+       {
+           isGameOver = true;
+           isFirstInput = false;
+       }
+       
+        public void UpdateScore()
+        {
+            currentScoreText.text = currentScore.ToString();
+            highScoreText.text = highScore.ToString();
+        }
+
         Node GetNode(int x, int y)
         {
             if(x < 0 || x > maxWidth-1 || y < 0 || y > maxHeight-1)
