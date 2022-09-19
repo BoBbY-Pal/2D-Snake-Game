@@ -1,5 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
+using Enums;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -46,10 +46,7 @@ namespace DontConflict
         public Text currentScoreText;
         public Text highScoreText;
 
-        public enum Direction
-        {
-            up,down,left,right
-        }
+        
 
         public UnityEvent onStart;
         public UnityEvent onGameOver;
@@ -69,7 +66,7 @@ namespace DontConflict
             PlacePlayer();
             PlaceCamera(); 
             CreateApple();
-            targetDirection = Direction.up;
+            targetDirection = Direction.Up;
             isGameOver = false;
             currentScore = 0;
             UpdateScore();
@@ -90,7 +87,7 @@ namespace DontConflict
             foreach(var t in tail)
             {
                 if(t.obj != null)
-                Destroy(t.obj);
+                    Destroy(t.obj);
             }
             tail.Clear();
             availableNodes.Clear();
@@ -233,22 +230,22 @@ namespace DontConflict
         {
             if(up)
             {
-                SetDirection(Direction.up);
+                SetDirection(Direction.Up);
                 
             }
             else if(down)
             {
-                SetDirection(Direction.down);
+                SetDirection(Direction.Down);
                 
             }
             else if(left)
             {
-                SetDirection(Direction.left);
+                SetDirection(Direction.Left);
                 
             }
             else if(right)
             {
-                SetDirection(Direction.right);
+                SetDirection(Direction.Right);
                 
             }
         }
@@ -269,16 +266,16 @@ namespace DontConflict
 
             switch (curDirection) 
             {
-                case Direction.up:
+                case Direction.Up:
                     y = 1;
                     break;
-                case Direction.down :
+                case Direction.Down :
                     y = -1;
                     break;
-                case Direction.left:
+                case Direction.Left:
                     x = -1;
                     break;
-                case Direction.right :
+                case Direction.Right :
                     x = 1;
                     break;
             }
@@ -291,7 +288,7 @@ namespace DontConflict
             }
             else
             {   
-                if(isTailNode(targetNode))
+                if(IsTailNode(targetNode))
                 {
                     //game over
                     onGameOver.Invoke();
@@ -427,31 +424,31 @@ namespace DontConflict
             switch (d)
            {    
                default:
-               case Direction.up:
-                    if(curDirection == Direction.down)
+               case Direction.Up:
+                    if(curDirection == Direction.Down)
                         return true;
                     else
                      return false;
-                case Direction.down:
-                    if(curDirection == Direction.up)
-                        return true;
-                    else
-                        return false;
-                case Direction.left:
-                    if(curDirection == Direction.right)
-                        return true;
-                    else
-                        return false;
-                case Direction.right:
-                    if(curDirection == Direction.left)
-                        return true;
+               case Direction.Down:
+                   if(curDirection == Direction.Up)
+                       return true;
+                   else
+                       return false;
+               case Direction.Left:
+                   if(curDirection == Direction.Right)
+                       return true;
+                   else
+                       return false;
+               case Direction.Right:
+                   if(curDirection == Direction.Left)
+                       return true;
                    else
                        return false;
            }
            
         }
 
-        bool isTailNode(Node n)
+        bool IsTailNode(Node n)
         {
             for(int i = 0; i < tail.Count; i++) 
             {
